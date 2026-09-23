@@ -1,0 +1,35 @@
+# Handeye data collection settings.
+#
+# These values reproduce the constants that used to be hardcoded in
+# calibration/collect_handeye.py, so the defaults and the behavior they describe
+# are unchanged. The loader rejects unknown keys, so a typo fails at startup
+# instead of silently falling back to a default.
+
+camera:
+  type: realsense_d435        # realsense_d435 (alias: d435)
+  width: 640
+  height: 480
+  fps: 15
+
+robot:
+  type: realman               # realman
+  ip: 192.168.1.18
+  port: 8080
+
+board:
+  type: charuco
+  squares_x: 14
+  squares_y: 9
+  square_length: 0.02         # metres, side of one chessboard square
+  marker_length: 0.015        # metres, side of one ArUco marker
+  dictionary: DICT_5X5_100
+  legacy_pattern: false
+
+collector:
+  frame_timeout_ms: 200       # long timeouts make Q/ESC feel dead if the camera drops
+  max_frame_age: 0.5          # seconds; stale frames are never saved
+  min_corners: 30             # below this the board pose is not even estimated
+  max_rms: 1.0                # samples above this reprojection error are rejected
+  window_name: "HandEye Collection"
+  panel_height: 100
+  output_dir: handeye_data    # relative paths resolve against the calibration package
