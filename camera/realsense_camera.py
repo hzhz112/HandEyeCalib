@@ -1,7 +1,7 @@
 import time
 import numpy as np
 
-from calibration.camera.camera_interface import (
+from camera.camera_interface import (
     CameraFrame,
     CameraInterface,
     CameraIntrinsics,

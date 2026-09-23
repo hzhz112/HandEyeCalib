@@ -11,10 +11,10 @@ import time
 
 import numpy as np
 
-from calibration.camera.camera_factory import create_camera
-from calibration.camera.camera_interface import DISTORTION_MODELS, validate_intrinsics
-from calibration.config.loader import CameraConfig, load_config
-from calibration.tests.support import main, skip
+from camera.camera_factory import create_camera
+from camera.camera_interface import DISTORTION_MODELS, validate_intrinsics
+from config.loader import CameraConfig, load_config
+from tests.support import main, skip
 
 
 def _started_camera():

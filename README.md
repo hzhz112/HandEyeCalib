@@ -16,7 +16,7 @@ appears inside the adapter that owns it.
 | `apps/collect_handeye.py` | Application layer. Flow control only. |
 | `tests/` | Test suite. `pytest.ini` at the repo root configures it. |
 | `test/` | Interactive hardware scripts. Not tests; excluded from collection. |
-| `solve_handeye.py` | Solver. Reads a session's `samples.json`. See the blocker at the end. |
+| `solve_handeye.py` | Solver. Reads a session's `samples.json`. No OpenCV, no hardware. |
 | `collect_handeye_data.py` | The pre-refactor monolith. Kept only as a comparison oracle; unmaintained. |
 
 The dependency direction is one-way: `apps/` -> `board/`, `dataset/`, `camera/`,
@@ -28,26 +28,60 @@ detection, `solvePnP`, data saving, JSON handling or OpenCV window code.
 Needs the RealMan SDK, OpenCV with aruco, the RealSense SDK, NumPy, SciPy and
 PyYAML.
 
-This repository directory **is** the `calibration` package directory, so run it
-**from the directory that contains the repository**, as a module:
-
 ```bash
-cd ..                                     # the parent of this repo
-python -m calibration.apps.collect_handeye               # uses config/handeye.yaml
-python -m calibration.apps.collect_handeye --config PATH
+python apps/collect_handeye.py               # uses config/handeye.yaml
+python apps/collect_handeye.py --config PATH
 ```
 
-Clone the repo as a directory named `calibration/` and this works unchanged.
+Run it from the repository root, or from anywhere at all.
+`apps/collect_handeye.py` prepends the repository root to `sys.path` when it is
+executed as a script, so the sibling packages import regardless of the working
+directory.
 
-`python calibration/apps/collect_handeye.py` does **not** work: that puts the
-script's own directory on `sys.path[0]`, so every `calibration.*` import fails.
-Neither does running `python -m calibration.apps.collect_handeye` from *inside*
-this directory - `calibration` is then not importable, because the parent is
-what needs to be on the path. Only the `-m` form from the parent works.
+Imports inside this repository are rooted **at this directory** - `from board...`,
+`from config...`, `from tests...`. Nothing depends on the checkout directory
+being named `calibration/`, and neither `-m` nor a parent on `sys.path` is
+required.
 
 Press `S` to save one sample, `Q` or `ESC` to quit. The arm must be stationary -
 the robot pose and the image are read one after the other, not synchronously.
-Data lands in `calibration/handeye_data/session_<timestamp>/`.
+Data lands in `handeye_data/session_<timestamp>/`.
+
+## Solving
+
+`solve_handeye.py` is a **standalone script**, unlike the collector: it imports
+nothing else in this repository, so it runs directly from anywhere - no `-m`,
+nothing to put on `sys.path`.
+
+```bash
+python solve_handeye.py                       # newest handeye_data/session_*/
+python solve_handeye.py handeye_data/session_20260923_132552
+python solve_handeye.py handeye_data/session_20260923_132552/samples.json
+```
+
+With no argument it picks the newest `handeye_data/session_*/samples.json`; a
+directory argument resolves to the `samples.json` inside it.
+
+It needs only NumPy and SciPy - **not** OpenCV, not the SDKs, not the hardware.
+It solves `^F T_C` (color camera -> robot flange), holds out the last 5 samples
+for validation, prints a consistency check on the training set and on the
+held-out samples, and writes `handeye_result.json` next to the input
+`samples.json`.
+
+The solver shares nothing with `collect_handeye.py` except the `samples.json`
+schema. It reads only `samples`, `index`, `T_base_flange`, `T_color_board`,
+`charuco_corners` and `reprojection_rms_px`.
+
+`handeye_result.json` is deliberately small: the transform, the camera origin,
+the sample counts, and the aggregate errors. It records `method` (`"PARK"`) and
+`solver` (`"park_numpy"`) so a result carries both the algorithm and the
+implementation that produced it.
+
+The transform is written the way a human writes a matrix - one line per row -
+rather than the one-number-per-line `json.dump` default. The per-pose error
+breakdown is not persisted: a calibration is judged by its mean and worst-case
+error, and a 15-entry array of residuals is not something anyone reads. The
+console output carries the same information.
 
 ## Configuration
 
@@ -158,18 +192,18 @@ python -m pytest                 # from inside this repo root; pythonpath=.. han
 python -m pytest -q              # 16 passed, 1 skipped when only the arm is absent
 ```
 
-Or one module at a time, from the dir that contains this repo:
+Or one module at a time, from this directory:
 
 ```bash
-python -m calibration.tests.test_charuco   # no hardware: renders a board and diffs
-python -m calibration.tests.test_dataset   # no hardware: samples.json contract
-python -m calibration.tests.test_camera    # needs the D435; skips cleanly without it
-python -m calibration.tests.test_robot     # skips in ~1 s if the arm is unreachable
+python -m tests.test_charuco   # no hardware: renders a board and diffs
+python -m tests.test_dataset   # no hardware: samples.json contract
+python -m tests.test_camera    # needs the D435; skips cleanly without it
+python -m tests.test_robot     # skips in ~1 s if the arm is unreachable
 ```
 
 Tests skip rather than fail when a device is absent. `pytest.ini` sets
-`pythonpath = ..` (this directory is the package, so its parent must be
-importable) and restricts collection to `tests/`: `test/` holds interactive
+`pythonpath = .` (imports are rooted at this directory) and restricts
+collection to `tests/`: `test/` holds interactive
 scripts that open a camera and loop forever at import time, and
 `tests/test_show_information.py` connects to the arm at import time.
 
@@ -177,19 +211,46 @@ scripts that open a camera and loop forever at import time, and
 the pre-refactor implementation. Keep that file until the comparison is no
 longer useful.
 
-## Known blocker: OpenCV 5.0 removed `cv2.calibrateHandEye`
+## Hand-eye solve: Park's method implemented in NumPy
 
-`solve_handeye.py` cannot run on the installed OpenCV 5.0.0.93.
-`hasattr(cv2, "calibrateHandEye")` is `False` at top level, in every submodule
-and in the shipped stubs - but `cv2.CALIB_HAND_EYE_PARK` still exists, so the
-failure appears at the call, not at the import.
+`solve_handeye.py` does **not** call `cv2.calibrateHandEye`. OpenCV 5.0 removed
+that function: in 5.0.0.93, `hasattr(cv2, "calibrateHandEye")` is `False` at top
+level, in every submodule and in the shipped stubs, while `cv2.CALIB_HAND_EYE_PARK`
+still exists - so the failure appeared at the call site, not at the import.
 
-Two ways out:
+Downgrading OpenCV was the alternative, and was rejected: the aruco API differs
+between 4.x and 5.0, so the collector would have needed re-validating, and the
+collected data was produced under 5.0. Instead the package implements the
+algorithm itself and drops the OpenCV dependency from the solver entirely.
 
-1. Downgrade in the active environment: `pip install "opencv-contrib-python<5"`.
-   Note the aruco API differs between 4.x and 5.0, so the collector would need
-   re-validating afterwards.
-2. Implement Park's method in NumPy (Kronecker product plus SVD on `AX = XB`)
-   and drop the OpenCV call.
+Park & Martin (1994), "Robot sensor calibration: solving AX = XB on the Euclidean
+group", is a **closed-form** solution - no iteration, no initial guess. The
+rotation part of `A X = X B` gives `alpha_ij = R_X beta_ij` for the relative
+motion rotation vectors, which is linear in `R_X` and solves by orthogonal
+Procrustes (SVD). The translation then follows from a least-squares solve of
+`(R_A - I) t_X = R_X t_B - t_A` over the same pose pairs. About 40 lines of NumPy;
+see `solve_handeye()` for the derivation.
 
-This is unrelated to the layering in this package and is not addressed here.
+**Verified against OpenCV 4.14.0.94's own `CALIB_HAND_EYE_PARK`**, on the
+15-sample training set of `session_20260923_132552`:
+
+| Quantity | Agreement with OpenCV PARK |
+|---|---|
+| Rotation matrix, max element | 3.0e-14 |
+| Rotation, degrees | 1.3e-13 |
+| Translation, mm | 1.2e-11 |
+
+That is floating-point rounding, not algorithmic difference. For context, the
+other OpenCV methods differ from PARK by up to 1.8 mm on the same data, so the
+reproduction is exact for the method the result is labelled with.
+
+The reason the solver validates the *convention* as well as the numbers is that a
+transposed or inverted `T_flange_color` produces a finite, orthonormal, entirely
+plausible - and wrong - matrix. `evaluate()` catches that independently of the
+solver, by checking that every pose places the board at the same base-frame pose.
+
+Park's method needs relative rotations about **more than one axis**; about a
+single axis, the rotation about that axis is unobservable. Both the rotation
+diversity check in `main()` and the rank check in `solve_handeye()` warn about
+this, because the failure mode is otherwise silent - the method returns a
+well-formed, wrong answer.

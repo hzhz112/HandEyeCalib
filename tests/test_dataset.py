@@ -1,6 +1,6 @@
 """`samples.json` contract tests.
 
-The schema is read by `calibration/solve_handeye.py`, so it is frozen. The
+The schema is read by `solve_handeye.py`, so it is frozen. The
 failures these guard against are quiet ones: a numpy scalar that cannot be
 serialized, or an array landing in a field the solver compares numerically,
 both of which the save path's broad `except` turns into "sample silently
@@ -17,11 +17,11 @@ import tempfile
 
 import numpy as np
 
-from calibration.config.loader import BoardConfig
-from calibration.dataset.sample import HandEyeSample
-from calibration.dataset.writer import DatasetWriter
-from calibration.tests.fakes import FakeCamera
-from calibration.tests.support import main
+from config.loader import BoardConfig
+from dataset.sample import HandEyeSample
+from dataset.writer import DatasetWriter
+from tests.fakes import FakeCamera
+from tests.support import main
 
 # The keys solve_handeye.py reads. Renaming any of these breaks the solver.
 SOLVER_KEYS = {

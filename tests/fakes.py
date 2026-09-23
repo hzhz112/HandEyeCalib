@@ -9,8 +9,8 @@ from __future__ import annotations
 import cv2
 import numpy as np
 
-from calibration.board.charuco_detector import CharucoBoardSpec
-from calibration.camera.camera_interface import CameraIntrinsics
+from board.charuco_detector import CharucoBoardSpec
+from camera.camera_interface import CameraIntrinsics
 
 # Real D435 color intrinsics, so the synthetic tests use realistic numbers.
 D435_K = np.array(

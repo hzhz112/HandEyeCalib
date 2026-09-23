@@ -5,12 +5,9 @@ the camera and the OpenCV window, and delegates detection to `board/` and
 persistence to `dataset/`. It knows nothing about the RealSense or RealMan
 SDKs, nothing about ChArUco internals, and nothing about the JSON schema.
 
-Run from the repository root:
+Run directly, from anywhere:
 
-    python -m calibration.apps.collect_handeye [--config PATH]
-
-`python calibration/apps/collect_handeye.py` does not work: that puts the
-script's own directory on sys.path[0] and the `calibration.*` imports fail.
+    python apps/collect_handeye.py [--config PATH]
 
 Press S to save one sample, Q or ESC to quit. The arm must be stationary.
 """
@@ -19,23 +16,32 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 import time
 from pathlib import Path
+
+# Running this file directly puts `apps/` on sys.path[0], not the repository
+# root, so the sibling packages (`board`, `camera`, `config`, ...) would not
+# import. Add the repository root, whatever the checkout directory is called.
+# Under `import apps.collect_handeye` the package is already importable, and
+# `__package__` is set, so this is a no-op.
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import cv2
 import numpy as np
 
-from calibration.board.charuco_detector import (
+from board.charuco_detector import (
     BoardDetection,
     CharucoBoardSpec,
     CharucoDetector,
 )
-from calibration.camera.camera_factory import create_camera
-from calibration.config.loader import DEFAULT_CONFIG_PATH, HandEyeConfig, load_config
-from calibration.dataset.sample import HandEyeSample
-from calibration.dataset.writer import DatasetWriter
-from calibration.robot.robot_factory import create_robot
-from calibration.robot.robot_interface import validate_transform_matrix
+from camera.camera_factory import create_camera
+from config.loader import DEFAULT_CONFIG_PATH, HandEyeConfig, load_config
+from dataset.sample import HandEyeSample
+from dataset.writer import DatasetWriter
+from robot.robot_factory import create_robot
+from robot.robot_interface import validate_transform_matrix
 
 if os.name == "nt":
     import msvcrt

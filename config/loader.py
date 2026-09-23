@@ -6,9 +6,9 @@ what lets the factories take a config object instead of reading environment
 variables.
 
 Note the two thresholds shared with the solver: `min_corners` and `max_rms`
-also exist in `calibration/solve_handeye.py`. Raising `max_rms` here means the
-collector saves samples that the solver will silently discard, so change both
-together.
+also exist in `solve_handeye.py` at the repository root. Raising `max_rms` here
+means the collector saves samples that the solver will silently discard, so
+change both together.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any
 
-# .../calibration -- relative output paths resolve against this, so the
+# The repository root -- relative output paths resolve against this, so the
 # location of the data does not depend on the working directory.
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 

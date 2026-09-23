@@ -20,7 +20,7 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from calibration.camera.camera_interface import CameraInterface
+from camera.camera_interface import CameraInterface
 
 
 @dataclass(frozen=True)

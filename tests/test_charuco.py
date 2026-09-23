@@ -1,7 +1,7 @@
 """ChArUco detection tests.
 
 No hardware: every case runs against a rendered board and a fake camera. The
-pre-refactor implementation in `calibration/collect_handeye_data.py` is used as
+pre-refactor implementation in `collect_handeye_data.py` is used as
 an oracle, because the move into `board/charuco_detector.py` must not change
 the math by even one ulp.
 """
@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from calibration.board.charuco_detector import CharucoBoardSpec, CharucoDetector
-from calibration.tests.fakes import D435_HEIGHT, D435_K, D435_WIDTH, FakeCamera, render_board
-from calibration.tests.support import main, skip
+from board.charuco_detector import CharucoBoardSpec, CharucoDetector
+from tests.fakes import D435_HEIGHT, D435_K, D435_WIDTH, FakeCamera, render_board
+from tests.support import main, skip
 
 SPEC = CharucoBoardSpec()
 EXPECTED_CORNERS = 104
@@ -31,7 +31,7 @@ def _legacy_oracle():
     """Import the monolith, or skip if its dependencies are unavailable."""
     try:
         import pyrealsense2 as rs
-        import calibration.collect_handeye_data as legacy
+        import collect_handeye_data as legacy
     except ImportError as error:
         skip(f"legacy oracle unavailable: {error!r}")
     return legacy, rs

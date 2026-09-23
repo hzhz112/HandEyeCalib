@@ -11,9 +11,9 @@ import socket
 
 import numpy as np
 
-from calibration.config.loader import load_config
-from calibration.robot.robot_factory import create_robot
-from calibration.tests.support import main, skip
+from config.loader import load_config
+from robot.robot_factory import create_robot
+from tests.support import main, skip
 
 CONNECT_TIMEOUT_S = 1.5
 

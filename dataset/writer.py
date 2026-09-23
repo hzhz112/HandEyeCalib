@@ -17,14 +17,14 @@ from typing import TYPE_CHECKING
 import cv2
 import numpy as np
 
-from calibration.dataset.sample import HandEyeSample
+from dataset.sample import HandEyeSample
 
 if TYPE_CHECKING:
     # Annotations only: the writer reads `.name` and `get_intrinsics()` off
     # whatever it is handed, so it needs no import at runtime.
-    from calibration.camera.camera_interface import CameraInterface
-    from calibration.config.loader import BoardConfig
-    from calibration.robot.robot_interface import RobotInterface
+    from camera.camera_interface import CameraInterface
+    from config.loader import BoardConfig
+    from robot.robot_interface import RobotInterface
 
 
 class DatasetWriter:

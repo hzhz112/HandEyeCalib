@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
-from calibration.robot.robot_interface import RobotInterface, validate_transform_matrix
+from robot.robot_interface import RobotInterface, validate_transform_matrix
 
 class RealManRobot(RobotInterface):
     name = "RealMan"
@@ -61,7 +61,7 @@ class RealManRobot(RobotInterface):
     def _read_pose(self):
         """Read the current end-effector pose as [x, y, z, rx, ry, rz].
 
-        Previously imported from calibration.test.test_realman_pose, inlined
+        Previously imported from test.test_realman_pose, inlined
         here because production code must not depend on a test module.
         """
         code, state = self._arm.rm_get_current_arm_state()
