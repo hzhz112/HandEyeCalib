@@ -9,8 +9,8 @@ __pycache__/
 # session (`git add -f handeye_data/session_.../`) if one is worth publishing.
 handeye_data/
 
-test/
-tests/
+test
+tests
 
 # Tool caches
 .pytest_cache/
